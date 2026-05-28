@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Image Worker</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workbench" aria-label="Image generation">
+        <header class="topbar">
+          <div>
+            <h1>Image Worker</h1>
+            <p id="modelLine">Model</p>
+          </div>
+          <div id="configBadge" class="badge">Checking</div>
+        </header>
+
+        <form id="generateForm" class="controls">
+          <label class="field field-token">
+            <span>Access Code</span>
+            <input id="accessToken" name="accessToken" type="password" autocomplete="current-password" />
+          </label>
+
+          <label class="field field-count">
+            <span>Count</span>
+            <input id="count" name="count" type="number" min="1" max="4" value="1" />
+          </label>
+
+          <label class="field field-prompt">
+            <span>Prompt</span>
+            <textarea
+              id="prompt"
+              name="prompt"
+              rows="7"
+              maxlength="4000"
+              spellcheck="true"
+            >A tiny red robot painting a sunrise, clean digital illustration</textarea>
+          </label>
+
+          <div class="actions">
+            <button id="generateButton" type="submit">Generate</button>
+            <button id="clearButton" type="button" class="secondary">Clear</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="results-panel" aria-label="Generated images">
+        <div class="result-head">
+          <h2>Results</h2>
+          <span id="statusLine">Ready</span>
+        </div>
+        <div id="gallery" class="gallery" aria-live="polite"></div>
+        <details id="errorDetails" class="details" hidden>
+          <summary>Details</summary>
+          <pre id="detailsText"></pre>
+        </details>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

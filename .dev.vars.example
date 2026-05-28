@@ -1,0 +1,4 @@
+SPACEX_API_URL="https://api.spacexapi.com/v1/chat/completions"
+SPACEX_API_KEY="replace-with-your-api-key"
+APP_ACCESS_TOKEN="replace-with-a-private-access-code"
+SPACEX_MODEL="grok-imagine-image-lite"
