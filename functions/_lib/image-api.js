@@ -1,4 +1,5 @@
-const DEFAULT_MODEL = "grok-imagine-image-lite";
+export const DEFAULT_MODEL = "grok-imagine-image-lite";
+
 const MAX_COUNT = 4;
 const MAX_PROMPT_CHARS = 4000;
 const REQUIRED_ENV = ["SPACEX_API_URL", "SPACEX_API_KEY", "APP_ACCESS_TOKEN"];
@@ -8,84 +9,86 @@ const MARKDOWN_IMAGE_RE = /!\[[^\]]*]\(([^)]+)\)/g;
 const URL_RE = /https?:\/\/[^\s)"'<>]+/g;
 const BASE64_RE = /^[A-Za-z0-9+/=\s]{512,}$/;
 
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
+export function missingEnv(env) {
+  return REQUIRED_ENV.filter((name) => !String(env[name] || "").trim());
+}
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: securityHeaders() });
-    }
+export function getModel(env) {
+  return env.SPACEX_MODEL || DEFAULT_MODEL;
+}
 
-    if (url.pathname === "/api/config" && request.method === "GET") {
-      return jsonResponse({
-        configured: missingEnv(env).length === 0,
-        model: env.SPACEX_MODEL || DEFAULT_MODEL,
-        accessRequired: true,
-      });
-    }
-
-    if (url.pathname === "/api/generate" && request.method === "POST") {
-      return handleGenerate(request, env);
-    }
-
-    return env.ASSETS.fetch(request);
-  },
-};
-
-async function handleGenerate(request, env) {
-  const missing = missingEnv(env);
-  if (missing.length > 0) {
-    return errorResponse(`Missing deployment environment variables: ${missing.join(", ")}`, 500);
+export function tokenMatches(received, expected) {
+  const a = String(received || "");
+  const b = String(expected || "");
+  let mismatch = a.length ^ b.length;
+  const length = Math.max(a.length, b.length);
+  for (let index = 0; index < length; index += 1) {
+    mismatch |= (a.charCodeAt(index) || 0) ^ (b.charCodeAt(index) || 0);
   }
+  return mismatch === 0;
+}
 
-  let body;
+export async function readJson(request) {
   try {
-    body = await request.json();
+    return await request.json();
   } catch {
-    return errorResponse("Request body must be JSON.", 400);
-  }
-
-  const accessToken = String(body.accessToken || "");
-  if (!tokenMatches(accessToken, env.APP_ACCESS_TOKEN)) {
-    return errorResponse("Invalid access token.", 401);
-  }
-
-  const prompt = String(body.prompt || "").trim();
-  if (!prompt) {
-    return errorResponse("Prompt is required.", 400);
-  }
-  if (prompt.length > MAX_PROMPT_CHARS) {
-    return errorResponse(`Prompt is too long. Keep it under ${MAX_PROMPT_CHARS} characters.`, 400);
-  }
-
-  const count = clampCount(body.count);
-  try {
-    const result = await generateImages(env, prompt, count);
-    return jsonResponse(result);
-  } catch (error) {
-    const details = error instanceof ApiFailure ? error.publicDetails : undefined;
-    return errorResponse(error.message || "Image generation failed.", 502, details);
+    throw new ApiFailure("请求体必须是 JSON。", [{ label: "请求解析", ok: false, status: 400 }]);
   }
 }
 
+export function jsonResponse(body, init = {}) {
+  const status = typeof init === "number" ? init : init.status || 200;
+  const headers = new Headers(typeof init === "number" ? undefined : init.headers);
+  headers.set("Content-Type", "application/json; charset=utf-8");
+  for (const [key, value] of securityHeaders()) {
+    headers.set(key, value);
+  }
+  return new Response(JSON.stringify(body), { status, headers });
+}
+
+export function errorResponse(message, status = 500, details) {
+  return jsonResponse({ error: message, details }, { status });
+}
+
+export function validatePrompt(prompt) {
+  const value = String(prompt || "").trim();
+  if (!value) {
+    throw new ApiFailure("请输入提示词。", [{ label: "提示词", ok: false, status: 400 }]);
+  }
+  if (value.length > MAX_PROMPT_CHARS) {
+    throw new ApiFailure(`提示词过长，请控制在 ${MAX_PROMPT_CHARS} 个字符以内。`, [
+      { label: "提示词", ok: false, status: 400 },
+    ]);
+  }
+  return value;
+}
+
+export function clampCount(value) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) {
+    return 1;
+  }
+  return Math.max(1, Math.min(MAX_COUNT, parsed));
+}
+
 export async function generateImages(env, prompt, count) {
-  const model = env.SPACEX_MODEL || DEFAULT_MODEL;
+  const model = getModel(env);
   const attempts = [];
 
   const chatBody = chatPayload(model, prompt, count);
   const chat = await postJson(env.SPACEX_API_URL, env.SPACEX_API_KEY, chatBody);
-  attempts.push(summarizeAttempt("chat/completions", chat));
+  attempts.push(summarizeAttempt("聊天接口", chat));
   if (chat.ok) {
     const candidates = extractImageCandidates(chat.data, "chat");
     if (candidates.length > 0) {
       const images = await materializeCandidates(candidates.slice(0, count), env);
-      return { images, model, source: "chat/completions" };
+      return { images, model, source: "聊天接口" };
     }
   }
 
   const imageEndpoint = deriveImagesEndpoint(env.SPACEX_API_URL);
   for (const forceBase64 of [true, false]) {
-    const label = forceBase64 ? "images/generations b64_json" : "images/generations default";
+    const label = forceBase64 ? "图片接口（base64）" : "图片接口";
     const imageBody = imagePayload(model, prompt, count, forceBase64);
     const response = await postJson(imageEndpoint, env.SPACEX_API_KEY, imageBody);
     attempts.push(summarizeAttempt(label, response));
@@ -100,7 +103,7 @@ export async function generateImages(env, prompt, count) {
     }
   }
 
-  throw new ApiFailure("No image data was found in any API response.", attempts);
+  throw new ApiFailure("接口返回中没有找到图片数据。", attempts);
 }
 
 export function deriveImagesEndpoint(chatEndpoint) {
@@ -150,7 +153,7 @@ async function postJson(url, apiKey, payload) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         Accept: "application/json",
-        "User-Agent": "SpacexImageWorker/1.0",
+        "User-Agent": "GrokImagePages/1.0",
       },
       body: JSON.stringify(payload),
     });
@@ -166,7 +169,7 @@ async function postJson(url, apiKey, payload) {
       ok: false,
       status: 0,
       data: null,
-      text: error.message || "Network error",
+      text: error.message || "网络请求失败",
     };
   }
 }
@@ -295,7 +298,7 @@ async function materializeCandidates(candidates, env) {
       dataUrl: image.dataUrl,
       mediaType: image.mediaType,
       source: candidate.source,
-      filename: `generated-${Date.now()}-${String(index + 1).padStart(2, "0")}.${extensionForMime(image.mediaType)}`,
+      filename: `grok-image-${Date.now()}-${String(index + 1).padStart(2, "0")}.${extensionForMime(image.mediaType)}`,
     });
   }
   return images;
@@ -318,51 +321,28 @@ async function candidateToDataUrl(candidate, env) {
     };
   }
 
-  throw new Error(`Candidate ${candidate.source} did not contain image data.`);
+  throw new Error(`图片候选 ${candidate.source} 没有可用数据。`);
 }
 
 async function fetchImageUrl(url, env) {
   let response = await fetch(url, {
-    headers: { "User-Agent": "SpacexImageWorker/1.0" },
+    headers: { "User-Agent": "GrokImagePages/1.0" },
   });
 
   if (response.status === 401 || response.status === 403) {
     response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${env.SPACEX_API_KEY}`,
-        "User-Agent": "SpacexImageWorker/1.0",
+        "User-Agent": "GrokImagePages/1.0",
       },
     });
   }
 
   if (!response.ok) {
-    throw new Error(`Could not download generated image. HTTP ${response.status}`);
+    throw new Error(`下载生成图片失败，HTTP ${response.status}`);
   }
 
   return response;
-}
-
-function missingEnv(env) {
-  return REQUIRED_ENV.filter((name) => !String(env[name] || "").trim());
-}
-
-function clampCount(value) {
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed)) {
-    return 1;
-  }
-  return Math.max(1, Math.min(MAX_COUNT, parsed));
-}
-
-function tokenMatches(received, expected) {
-  const a = String(received || "");
-  const b = String(expected || "");
-  let mismatch = a.length ^ b.length;
-  const length = Math.max(a.length, b.length);
-  for (let index = 0; index < length; index += 1) {
-    mismatch |= (a.charCodeAt(index) || 0) ^ (b.charCodeAt(index) || 0);
-  }
-  return mismatch === 0;
 }
 
 function isProbablyImageUrl(value) {
@@ -483,20 +463,6 @@ function sanitizePreview(text) {
   return String(text).replace(/[A-Za-z0-9+/]{300,}={0,2}/g, "[base64 omitted]").slice(0, 1200);
 }
 
-function jsonResponse(body, init = {}) {
-  const status = typeof init === "number" ? init : init.status || 200;
-  const headers = new Headers(typeof init === "number" ? undefined : init.headers);
-  headers.set("Content-Type", "application/json; charset=utf-8");
-  for (const [key, value] of securityHeaders()) {
-    headers.set(key, value);
-  }
-  return new Response(JSON.stringify(body), { status, headers });
-}
-
-function errorResponse(message, status = 500, details) {
-  return jsonResponse({ error: message, details }, { status });
-}
-
 function securityHeaders() {
   return new Headers({
     "Cache-Control": "no-store",
@@ -505,7 +471,7 @@ function securityHeaders() {
   });
 }
 
-class ApiFailure extends Error {
+export class ApiFailure extends Error {
   constructor(message, publicDetails) {
     super(message);
     this.publicDetails = publicDetails;

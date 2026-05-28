@@ -1,7 +1,7 @@
 {
   "name": "grok-image-worker",
   "version": "1.0.0",
-  "description": "A Cloudflare Workers image generation proxy and web UI for OpenAI-compatible Grok APIs.",
+  "description": "A Cloudflare Pages image generation proxy and Chinese web UI for OpenAI-compatible Grok APIs.",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -9,9 +9,9 @@
     "url": "https://github.com/wintopic/Grok-image.git"
   },
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "check": "node --check src/index.js && node --test test/parser.test.mjs"
+    "dev": "wrangler pages dev public --compatibility-date=2026-05-28",
+    "deploy": "wrangler pages deploy public --project-name=grok-image",
+    "check": "node --check functions/_lib/image-api.js && node --check functions/api/config.js && node --check functions/api/auth.js && node --check functions/api/generate.js && node --check public/app.js && node --test test/parser.test.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.95.0"

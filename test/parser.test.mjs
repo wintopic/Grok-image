@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { deriveImagesEndpoint, extractImageCandidates } from "../src/index.js";
+import { deriveImagesEndpoint, extractImageCandidates } from "../functions/_lib/image-api.js";
 
 const png =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=";

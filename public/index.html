@@ -3,61 +3,66 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Image Worker</title>
+    <title>Grok 图像生成</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <main class="app-shell">
-      <section class="workbench" aria-label="Image generation">
+      <section class="creator-panel" aria-label="创作面板">
         <header class="topbar">
           <div>
-            <h1>Image Worker</h1>
-            <p id="modelLine">Model</p>
+            <h1>Grok 图像生成</h1>
+            <p id="modelLine">模型检查中</p>
           </div>
-          <div id="configBadge" class="badge">Checking</div>
+          <div id="configBadge" class="badge">检查中</div>
         </header>
 
         <form id="generateForm" class="controls">
-          <label class="field field-token">
-            <span>Access Code</span>
-            <input id="accessToken" name="accessToken" type="password" autocomplete="current-password" />
-          </label>
-
-          <label class="field field-count">
-            <span>Count</span>
-            <input id="count" name="count" type="number" min="1" max="4" value="1" />
-          </label>
-
           <label class="field field-prompt">
-            <span>Prompt</span>
-            <textarea
-              id="prompt"
-              name="prompt"
-              rows="7"
-              maxlength="4000"
-              spellcheck="true"
-            >A tiny red robot painting a sunrise, clean digital illustration</textarea>
+            <span>提示词</span>
+            <textarea id="prompt" name="prompt" rows="8" maxlength="4000" spellcheck="true">一台口袋大小的玻璃灯塔放在书桌上发光，清晰数字插画</textarea>
           </label>
 
-          <div class="actions">
-            <button id="generateButton" type="submit">Generate</button>
-            <button id="clearButton" type="button" class="secondary">Clear</button>
+          <div class="control-grid">
+            <label class="field field-count">
+              <span>数量</span>
+              <input id="count" name="count" type="number" min="1" max="4" value="1" />
+            </label>
+
+            <div class="quick-actions" aria-label="快捷操作">
+              <button id="generateButton" type="submit">生成图片</button>
+              <button id="clearButton" type="button" class="secondary">清空结果</button>
+            </div>
           </div>
         </form>
       </section>
 
-      <section class="results-panel" aria-label="Generated images">
+      <section class="results-panel" aria-label="作品区">
         <div class="result-head">
-          <h2>Results</h2>
-          <span id="statusLine">Ready</span>
+          <h2>作品区</h2>
+          <span id="statusLine">准备就绪</span>
         </div>
-        <div id="gallery" class="gallery" aria-live="polite"></div>
+        <div id="gallery" class="gallery" aria-live="polite">
+          <p class="empty">暂无图片</p>
+        </div>
         <details id="errorDetails" class="details" hidden>
-          <summary>Details</summary>
+          <summary>错误详情</summary>
           <pre id="detailsText"></pre>
         </details>
       </section>
     </main>
+
+    <div id="authModal" class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <form id="authForm" class="auth-box">
+        <h2 id="authTitle">输入访问码</h2>
+        <label class="field">
+          <span>访问码</span>
+          <input id="accessToken" name="accessToken" type="password" autocomplete="current-password" />
+        </label>
+        <button id="authButton" type="submit">验证</button>
+        <p id="authMessage" class="auth-message">验证通过后自动进入。</p>
+      </form>
+    </div>
 
     <script src="/app.js" type="module"></script>
   </body>
