@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>Grok 图像生成</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
@@ -10,37 +11,58 @@
     <main class="app-shell">
       <section class="creator-panel" aria-label="创作面板">
         <header class="topbar">
-          <div>
+          <div class="topbar-title">
             <h1>Grok 图像生成</h1>
             <p id="modelLine">模型检查中</p>
           </div>
-          <div id="configBadge" class="badge">检查中</div>
+          <div class="topbar-actions">
+            <button
+              id="themeToggle"
+              type="button"
+              class="icon-button"
+              aria-label="切换主题"
+              title="切换主题"
+            >
+              <span id="themeIcon" aria-hidden="true">🌙</span>
+            </button>
+            <div id="configBadge" class="badge">检查中</div>
+          </div>
         </header>
 
         <form id="generateForm" class="controls">
           <label class="field field-prompt">
-            <span>提示词</span>
+            <span class="field-label">
+              提示词
+              <span id="promptCounter" class="counter">0 / 4000</span>
+            </span>
             <textarea id="prompt" name="prompt" rows="8" maxlength="4000" spellcheck="true">一台口袋大小的玻璃灯塔放在书桌上发光，清晰数字插画</textarea>
           </label>
 
+          <div id="promptHistory" class="prompt-history" aria-label="历史提示词" hidden></div>
+
           <div class="control-grid">
             <label class="field field-count">
-              <span>数量</span>
+              <span class="field-label">数量</span>
               <input id="count" name="count" type="number" min="1" max="4" value="1" />
             </label>
 
             <div class="quick-actions" aria-label="快捷操作">
               <button id="generateButton" type="submit">生成图片</button>
-              <button id="clearButton" type="button" class="secondary">清空结果</button>
+              <button id="clearPromptButton" type="button" class="secondary">清空提示词</button>
             </div>
           </div>
+          <p class="hint">提示：按 Ctrl/⌘ + Enter 快速生成。</p>
         </form>
       </section>
 
       <section class="results-panel" aria-label="作品区">
         <div class="result-head">
           <h2>作品区</h2>
-          <span id="statusLine">准备就绪</span>
+          <div class="result-head-right">
+            <button id="downloadAllButton" type="button" class="secondary small" hidden>全部下载</button>
+            <button id="clearButton" type="button" class="secondary small">清空结果</button>
+            <span id="statusLine">准备就绪</span>
+          </div>
         </div>
         <div id="gallery" class="gallery" aria-live="polite">
           <p class="empty">暂无图片</p>
@@ -56,12 +78,17 @@
       <form id="authForm" class="auth-box">
         <h2 id="authTitle">输入访问码</h2>
         <label class="field">
-          <span>访问码</span>
+          <span class="field-label">访问码</span>
           <input id="accessToken" name="accessToken" type="password" autocomplete="current-password" />
         </label>
         <button id="authButton" type="submit">验证</button>
         <p id="authMessage" class="auth-message">验证通过后自动进入。</p>
       </form>
+    </div>
+
+    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="图片预览" hidden>
+      <button id="lightboxClose" type="button" class="lightbox-close" aria-label="关闭预览">×</button>
+      <img id="lightboxImage" class="lightbox-image" alt="图片预览" />
     </div>
 
     <script src="/app.js" type="module"></script>

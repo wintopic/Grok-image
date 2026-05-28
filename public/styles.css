@@ -8,10 +8,42 @@
   --line: #d8e0e8;
   --accent: #0f7b6c;
   --accent-strong: #095d52;
+  --accent-soft: rgba(15, 123, 108, 0.09);
+  --accent-ring: rgba(15, 123, 108, 0.16);
   --blue: #295b9a;
+  --blue-strong: #1f477a;
   --warn: #a95d18;
   --danger: #a1313d;
+  --secondary-bg: #e5ebf1;
+  --secondary-hover: #d9e1e9;
+  --chip-bg: #eef2f6;
+  --input-bg: #fbfcfd;
+  --skeleton: linear-gradient(100deg, #e9eef3 30%, #f4f7fa 50%, #e9eef3 70%);
   --shadow: 0 16px 44px rgba(25, 36, 50, 0.12);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d141b;
+  --panel: #161f29;
+  --panel-soft: #1b2632;
+  --ink: #e7edf3;
+  --muted: #93a3b4;
+  --line: #2a3744;
+  --accent: #1c9d8a;
+  --accent-strong: #25b9a3;
+  --accent-soft: rgba(28, 157, 138, 0.16);
+  --accent-ring: rgba(28, 157, 138, 0.28);
+  --blue: #4b7fc4;
+  --blue-strong: #5e90d2;
+  --warn: #d68a3f;
+  --danger: #e0697a;
+  --secondary-bg: #243240;
+  --secondary-hover: #2d3e4e;
+  --chip-bg: #1f2c38;
+  --input-bg: #121b24;
+  --skeleton: linear-gradient(100deg, #1c2832 30%, #243240 50%, #1c2832 70%);
+  --shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -25,6 +57,9 @@ body {
   color: var(--ink);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  transition:
+    background 200ms ease,
+    color 200ms ease;
 }
 
 body.locked {
@@ -51,7 +86,7 @@ textarea {
   min-width: 0;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow: var(--shadow);
 }
 
@@ -68,6 +103,16 @@ textarea {
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid var(--line);
+}
+
+.topbar-title {
+  min-width: 0;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 h1,
@@ -92,13 +137,41 @@ h2 {
   font-size: 13px;
 }
 
+.icon-button {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-soft);
+  color: var(--ink);
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 120ms ease;
+}
+
+.icon-button:hover {
+  background: var(--secondary-hover);
+}
+
+.icon-button:active {
+  transform: scale(0.94);
+}
+
 .badge {
   min-width: 96px;
   padding: 7px 10px;
-  border: 1px solid rgba(15, 123, 108, 0.24);
+  border: 1px solid var(--accent-ring);
   border-radius: 999px;
   color: var(--accent-strong);
-  background: rgba(15, 123, 108, 0.09);
+  background: var(--accent-soft);
   font-size: 12px;
   font-weight: 800;
   text-align: center;
@@ -122,18 +195,31 @@ h2 {
   gap: 8px;
 }
 
-.field span {
+.field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
+}
+
+.counter {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.counter.is-limit {
+  color: var(--danger);
 }
 
 input,
 textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fbfcfd;
+  border-radius: 10px;
+  background: var(--input-bg);
   color: var(--ink);
   outline: none;
   transition:
@@ -148,7 +234,7 @@ input {
 }
 
 textarea {
-  min-height: 260px;
+  min-height: 240px;
   resize: vertical;
   padding: 13px;
   line-height: 1.55;
@@ -157,8 +243,40 @@ textarea {
 input:focus,
 textarea:focus {
   border-color: var(--accent);
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(15, 123, 108, 0.16);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.prompt-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.prompt-history[hidden] {
+  display: none;
+}
+
+.history-chip {
+  max-width: 100%;
+  min-height: 32px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.history-chip:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .control-grid {
@@ -170,29 +288,42 @@ textarea:focus {
 
 .quick-actions {
   display: grid;
-  grid-template-columns: 1fr 104px;
+  grid-template-columns: 1fr auto;
   gap: 10px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 button,
 .image-actions a {
   min-height: 44px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: var(--accent);
   color: #ffffff;
-  font-weight: 850;
+  font-weight: 800;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 120ms ease,
+    opacity 140ms ease;
 }
 
 button:hover,
 .image-actions a:hover {
   background: var(--accent-strong);
+}
+
+button:active {
+  transform: translateY(1px);
 }
 
 button:disabled {
@@ -201,12 +332,18 @@ button:disabled {
 }
 
 button.secondary {
-  background: #e5ebf1;
+  background: var(--secondary-bg);
   color: var(--ink);
 }
 
 button.secondary:hover {
-  background: #d9e1e9;
+  background: var(--secondary-hover);
+}
+
+button.small {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
 }
 
 .results-panel {
@@ -222,6 +359,12 @@ button.secondary:hover {
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid var(--line);
+}
+
+.result-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 #statusLine {
@@ -243,7 +386,7 @@ button.secondary:hover {
 .image-card {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--panel-soft);
 }
 
@@ -253,6 +396,7 @@ button.secondary:hover {
   aspect-ratio: 1 / 1;
   object-fit: contain;
   background: #101720;
+  cursor: zoom-in;
 }
 
 .image-actions {
@@ -281,7 +425,31 @@ button.secondary:hover {
 }
 
 .image-actions a:hover {
-  background: #1f477a;
+  background: var(--blue-strong);
+}
+
+.skeleton-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  aspect-ratio: 1 / 1;
+  background: var(--skeleton);
+  background-size: 200% 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-card {
+    animation: none;
+  }
 }
 
 .empty {
@@ -298,7 +466,7 @@ button.secondary:hover {
 .details summary {
   color: var(--danger);
   cursor: pointer;
-  font-weight: 850;
+  font-weight: 800;
 }
 
 .details pre {
@@ -306,7 +474,7 @@ button.secondary:hover {
   overflow: auto;
   margin: 12px 0 0;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #151d25;
   color: #f5f7fa;
   white-space: pre-wrap;
@@ -332,7 +500,7 @@ button.secondary:hover {
   display: grid;
   gap: 16px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--panel);
   box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
 }
@@ -345,6 +513,47 @@ button.secondary:hover {
 
 .auth-message.is-error {
   color: var(--danger);
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  padding: 32px;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 14, 20, 0.82);
+}
+
+.lightbox[hidden] {
+  display: none;
+}
+
+.lightbox-image {
+  max-width: 92vw;
+  max-height: 88vh;
+  border-radius: 10px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  background: #101720;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 @media (max-width: 880px) {
@@ -363,6 +572,10 @@ button.secondary:hover {
   .result-head {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .result-head-right {
+    flex-wrap: wrap;
   }
 
   .control-grid,

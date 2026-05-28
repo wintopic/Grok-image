@@ -6,18 +6,36 @@ const authMessage = document.querySelector("#authMessage");
 const authModal = document.querySelector("#authModal");
 const countInput = document.querySelector("#count");
 const promptInput = document.querySelector("#prompt");
+const promptCounter = document.querySelector("#promptCounter");
+const promptHistory = document.querySelector("#promptHistory");
 const generateButton = document.querySelector("#generateButton");
 const clearButton = document.querySelector("#clearButton");
+const clearPromptButton = document.querySelector("#clearPromptButton");
+const downloadAllButton = document.querySelector("#downloadAllButton");
 const gallery = document.querySelector("#gallery");
 const statusLine = document.querySelector("#statusLine");
 const modelLine = document.querySelector("#modelLine");
 const configBadge = document.querySelector("#configBadge");
 const errorDetails = document.querySelector("#errorDetails");
 const detailsText = document.querySelector("#detailsText");
+const themeToggle = document.querySelector("#themeToggle");
+const themeIcon = document.querySelector("#themeIcon");
+const lightbox = document.querySelector("#lightbox");
+const lightboxImage = document.querySelector("#lightboxImage");
+const lightboxClose = document.querySelector("#lightboxClose");
 
 const tokenKey = "grok-image-access-token";
-let serviceConfigured = false;
+const themeKey = "grok-image-theme";
+const historyKey = "grok-image-prompt-history";
+const PROMPT_MAX = 4000;
+const HISTORY_LIMIT = 8;
 
+let serviceConfigured = false;
+let lastImages = [];
+
+initTheme();
+updatePromptCounter();
+renderHistory();
 boot();
 
 authForm.addEventListener("submit", async (event) => {
@@ -30,11 +48,66 @@ form.addEventListener("submit", async (event) => {
   await generate();
 });
 
+promptInput.addEventListener("input", updatePromptCounter);
+
+promptInput.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+    event.preventDefault();
+    form.requestSubmit();
+  }
+});
+
 clearButton.addEventListener("click", () => {
+  lastImages = [];
+  downloadAllButton.hidden = true;
   gallery.replaceChildren(emptyState());
   setDetails(null);
   setStatus("准备就绪");
 });
+
+clearPromptButton.addEventListener("click", () => {
+  promptInput.value = "";
+  updatePromptCounter();
+  promptInput.focus();
+});
+
+downloadAllButton.addEventListener("click", downloadAll);
+
+themeToggle.addEventListener("click", () => {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  applyTheme(next);
+  localStorage.setItem(themeKey, next);
+});
+
+lightboxClose.addEventListener("click", closeLightbox);
+lightbox.addEventListener("click", (event) => {
+  if (event.target === lightbox) {
+    closeLightbox();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !lightbox.hidden) {
+    closeLightbox();
+  }
+});
+
+function initTheme() {
+  const stored = localStorage.getItem(themeKey);
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme(stored || (prefersDark ? "dark" : "light"));
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  themeIcon.textContent = theme === "dark" ? "☀️" : "🌙";
+  themeToggle.setAttribute("aria-label", theme === "dark" ? "切换到浅色主题" : "切换到深色主题");
+}
+
+function updatePromptCounter() {
+  const length = promptInput.value.length;
+  promptCounter.textContent = `${length} / ${PROMPT_MAX}`;
+  promptCounter.classList.toggle("is-limit", length >= PROMPT_MAX);
+}
 
 async function boot() {
   await loadConfig();
@@ -140,6 +213,8 @@ async function generate() {
   setBusy(true);
   setStatus("正在生成");
   setDetails(null);
+  showSkeletons(Math.max(1, Math.min(4, count)));
+  const startedAt = Date.now();
 
   try {
     const response = await fetch("/api/generate", {
@@ -157,8 +232,13 @@ async function generate() {
     }
 
     renderImages(body.images || []);
-    setStatus(`已生成 ${body.images?.length || 0} 张，来源：${body.source || "接口"}`);
+    saveHistory(prompt);
+    const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+    setStatus(`已生成 ${body.images?.length || 0} 张 · ${seconds}s · 来源：${body.source || "接口"}`);
   } catch (error) {
+    gallery.replaceChildren(emptyState("生成失败"));
+    lastImages = [];
+    downloadAllButton.hidden = true;
     setStatus(error.message || "生成失败");
     setDetails(error.details || error.stack || String(error));
   } finally {
@@ -166,8 +246,19 @@ async function generate() {
   }
 }
 
+function showSkeletons(count) {
+  gallery.replaceChildren();
+  for (let index = 0; index < count; index += 1) {
+    const card = document.createElement("div");
+    card.className = "skeleton-card";
+    gallery.append(card);
+  }
+}
+
 function renderImages(images) {
   gallery.replaceChildren();
+  lastImages = images;
+  downloadAllButton.hidden = images.length < 2;
   if (images.length === 0) {
     gallery.append(emptyState("接口没有返回图片"));
     return;
@@ -181,6 +272,7 @@ function renderImages(images) {
     img.src = image.dataUrl;
     img.alt = "生成的图片";
     img.loading = "lazy";
+    img.addEventListener("click", () => openLightbox(image.dataUrl));
 
     const footer = document.createElement("div");
     footer.className = "image-actions";
@@ -196,6 +288,70 @@ function renderImages(images) {
     footer.append(source, link);
     item.append(img, footer);
     gallery.append(item);
+  }
+}
+
+function downloadAll() {
+  lastImages.forEach((image, index) => {
+    const link = document.createElement("a");
+    link.href = image.dataUrl;
+    link.download = image.filename || `grok-image-${index + 1}.jpg`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+  });
+}
+
+function openLightbox(src) {
+  lightboxImage.src = src;
+  lightbox.hidden = false;
+  document.body.classList.add("locked");
+}
+
+function closeLightbox() {
+  lightbox.hidden = true;
+  lightboxImage.src = "";
+  if (authModal.hidden) {
+    document.body.classList.remove("locked");
+  }
+}
+
+function readHistory() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(historyKey) || "[]");
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(prompt) {
+  const history = readHistory().filter((item) => item !== prompt);
+  history.unshift(prompt);
+  localStorage.setItem(historyKey, JSON.stringify(history.slice(0, HISTORY_LIMIT)));
+  renderHistory();
+}
+
+function renderHistory() {
+  const history = readHistory();
+  promptHistory.replaceChildren();
+  if (history.length === 0) {
+    promptHistory.hidden = true;
+    return;
+  }
+  promptHistory.hidden = false;
+  for (const prompt of history) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "history-chip";
+    chip.textContent = prompt;
+    chip.title = prompt;
+    chip.addEventListener("click", () => {
+      promptInput.value = prompt;
+      updatePromptCounter();
+      promptInput.focus();
+    });
+    promptHistory.append(chip);
   }
 }
 
@@ -230,7 +386,9 @@ function showAuthModal() {
 
 function hideAuthModal() {
   authModal.hidden = true;
-  document.body.classList.remove("locked");
+  if (lightbox.hidden) {
+    document.body.classList.remove("locked");
+  }
 }
 
 function setAuthBusy(isBusy) {
