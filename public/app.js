@@ -16,6 +16,7 @@ const gallery = document.querySelector("#gallery");
 const statusLine = document.querySelector("#statusLine");
 const modelLine = document.querySelector("#modelLine");
 const configBadge = document.querySelector("#configBadge");
+const configBadgeText = document.querySelector("#configBadgeText");
 const errorDetails = document.querySelector("#errorDetails");
 const detailsText = document.querySelector("#detailsText");
 const themeToggle = document.querySelector("#themeToggle");
@@ -127,7 +128,7 @@ async function loadConfig() {
     const config = await response.json();
     serviceConfigured = Boolean(config.configured);
     modelLine.textContent = config.model ? `模型：${config.model}` : "模型未配置";
-    configBadge.textContent = serviceConfigured ? "服务已就绪" : "服务未配置";
+    configBadgeText.textContent = serviceConfigured ? "服务已就绪" : "服务未配置";
     configBadge.classList.toggle("badge-warn", !serviceConfigured);
     generateButton.disabled = !serviceConfigured;
     if (!serviceConfigured) {
@@ -136,7 +137,7 @@ async function loadConfig() {
     }
   } catch (error) {
     serviceConfigured = false;
-    configBadge.textContent = "无法连接";
+    configBadgeText.textContent = "无法连接";
     configBadge.classList.add("badge-warn");
     generateButton.disabled = true;
     setStatus("无法读取配置");
@@ -355,10 +356,25 @@ function renderHistory() {
   }
 }
 
-function emptyState(text = "暂无图片") {
-  const empty = document.createElement("p");
+function emptyState(text = "暂无图片", hint = "输入提示词，点击生成开始创作") {
+  const empty = document.createElement("div");
   empty.className = "empty";
-  empty.textContent = text;
+  empty.innerHTML =
+    '<span class="empty-icon" aria-hidden="true">' +
+    '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+    '<rect x="3" y="3" width="18" height="18" rx="4"></rect>' +
+    '<circle cx="8.5" cy="8.5" r="1.6"></circle>' +
+    '<path d="M21 15l-5-5L5 21"></path>' +
+    "</svg></span>";
+  const title = document.createElement("p");
+  title.textContent = text;
+  empty.append(title);
+  if (hint) {
+    const hintEl = document.createElement("span");
+    hintEl.className = "empty-hint";
+    hintEl.textContent = hint;
+    empty.append(hintEl);
+  }
   return empty;
 }
 

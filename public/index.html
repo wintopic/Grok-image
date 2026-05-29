@@ -12,7 +12,16 @@
       <section class="creator-panel" aria-label="创作面板">
         <header class="topbar">
           <div class="topbar-title">
-            <h1>Grok 图像生成</h1>
+            <div class="brand">
+              <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="4" />
+                  <circle cx="8.5" cy="8.5" r="1.6" />
+                  <path d="M21 15l-5-5L5 21" />
+                </svg>
+              </span>
+              <h1>Grok 图像生成</h1>
+            </div>
             <p id="modelLine">模型检查中</p>
           </div>
           <div class="topbar-actions">
@@ -25,7 +34,7 @@
             >
               <span id="themeIcon" aria-hidden="true">🌙</span>
             </button>
-            <div id="configBadge" class="badge">检查中</div>
+            <div id="configBadge" class="badge"><span class="badge-dot" aria-hidden="true"></span><span id="configBadgeText">检查中</span></div>
           </div>
         </header>
 
@@ -65,7 +74,17 @@
           </div>
         </div>
         <div id="gallery" class="gallery" aria-live="polite">
-          <p class="empty">暂无图片</p>
+          <div class="empty">
+            <span class="empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="4" />
+                <circle cx="8.5" cy="8.5" r="1.6" />
+                <path d="M21 15l-5-5L5 21" />
+              </svg>
+            </span>
+            <p>暂无图片</p>
+            <span class="empty-hint">输入提示词，点击生成开始创作</span>
+          </div>
         </div>
         <details id="errorDetails" class="details" hidden>
           <summary>错误详情</summary>
