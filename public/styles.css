@@ -331,6 +331,10 @@ button:disabled {
   opacity: 0.58;
 }
 
+button[hidden] {
+  display: none;
+}
+
 button.secondary {
   background: var(--secondary-bg);
   color: var(--ink);
