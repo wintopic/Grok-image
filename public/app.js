@@ -59,7 +59,7 @@ async function loadConfig() {
     generateButton.disabled = !serviceConfigured;
     if (!serviceConfigured) {
       setStatus("服务未配置");
-      setDetails({ 缺失环境变量: config.missing || [] });
+      setDetails(config.message || "服务未配置");
     }
   } catch (error) {
     serviceConfigured = false;

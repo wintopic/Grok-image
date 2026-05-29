@@ -324,13 +324,66 @@ async function candidateToDataUrl(candidate, env) {
   throw new Error(`图片候选 ${candidate.source} 没有可用数据。`);
 }
 
+function isPrivateHostname(hostname) {
+  if (
+    hostname === "localhost" ||
+    hostname === "" ||
+    hostname.endsWith(".local") ||
+    hostname.endsWith(".internal")
+  ) {
+    return true;
+  }
+
+  const parts = hostname.split(".");
+  if (parts.every((p) => /^\d+$/.test(p)) && parts.length === 4) {
+    const [a, b] = parts.map(Number);
+    if (
+      a === 10 ||
+      a === 127 ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 169 && b === 254) ||
+      a === 0
+    ) {
+      return true;
+    }
+  }
+
+  if (hostname.startsWith("[")) {
+    const inner = hostname.slice(1, -1).toLowerCase();
+    if (
+      inner === "::1" ||
+      inner.startsWith("fe80:") ||
+      inner.startsWith("fc00:") ||
+      inner.startsWith("fd") ||
+      inner === "::"
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function assertSafeUrl(raw) {
+  const parsed = new URL(raw);
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new Error(`Blocked fetch: disallowed protocol ${parsed.protocol}`);
+  }
+  if (isPrivateHostname(parsed.hostname)) {
+    throw new Error("Blocked fetch: private/internal address");
+  }
+  return parsed.href;
+}
+
 async function fetchImageUrl(url, env) {
-  let response = await fetch(url, {
+  const safeUrl = assertSafeUrl(url);
+  let response = await fetch(safeUrl, {
     headers: { "User-Agent": "GrokImagePages/1.0" },
   });
 
   if (response.status === 401 || response.status === 403) {
-    response = await fetch(url, {
+    response = await fetch(safeUrl, {
       headers: {
         Authorization: `Bearer ${env.SPACEX_API_KEY}`,
         "User-Agent": "GrokImagePages/1.0",
@@ -468,6 +521,11 @@ function securityHeaders() {
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
+    "X-Frame-Options": "DENY",
+    "Content-Security-Policy":
+      "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-ancestors 'none'",
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   });
 }
 
