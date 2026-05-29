@@ -269,12 +269,12 @@ h2 {
 
 /* ---------- buttons / controls ---------- */
 .icon-button {
-  width: 42px;
-  min-width: 42px;
-  height: 42px;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
   padding: 0;
   border: 1px solid var(--line-strong);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-pill);
   background: var(--soft-bg);
   color: var(--ink);
   font-size: 17px;
